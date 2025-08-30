@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "546402300063",
+    "project_id": "caring-97647",
+    "storage_bucket": "caring-97647.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:546402300063:android:e1bf43d1242c15c759f2aa",
+        "android_client_info": {
+          "package_name": "com.example.caring"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6ZGhpKzSvf8TVNiiwrob47MVd1O3kJTA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

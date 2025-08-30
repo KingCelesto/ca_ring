@@ -1,0 +1,41 @@
+mutation CreateNewPet($userId: UUID!, $breed: String!, $name: String!, $species: String!, $dateOfBirth: Date!) @auth(level: USER) {
+  pet_insert(data: {
+    userId: $userId,
+    breed: $breed,
+    name: $name,
+    species: $species,
+    dateOfBirth: $dateOfBirth
+  })
+}
+
+query GetPetsForUser($userId: UUID!) @auth(level: USER) {
+  pets(where: {userId: {eq: $userId}}) {
+    id
+    name
+    breed
+    species
+    dateOfBirth
+  }
+}
+
+mutation ScheduleAppointment($petId: UUID!, $appointmentDate: Timestamp!, $title: String!, $description: String, $location: String, $remindersEnabled: Boolean) @auth(level: USER) {
+  appointment_insert(data: {
+    petId: $petId,
+    appointmentDate: $appointmentDate,
+    title: $title,
+    description: $description,
+    location: $location,
+    remindersEnabled: $remindersEnabled
+  })
+}
+
+query GetAppointmentsForPet($petId: UUID!) @auth(level: USER) {
+  appointments(where: {petId: {eq: $petId}}) {
+    id
+    appointmentDate
+    title
+    description
+    location
+    remindersEnabled
+  }
+}
