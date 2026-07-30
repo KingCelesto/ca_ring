@@ -12,7 +12,11 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser!;
-    final petsRef = FirebaseFirestore.instance.collection('users').doc(user.uid).collection('pets').orderBy('createdAt', descending: true);
+    final petsRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('pets')
+        .orderBy('createdAt', descending: true);
 
     return Scaffold(
       appBar: AppBar(
@@ -21,14 +25,17 @@ class DashboardScreen extends StatelessWidget {
           IconButton(
             tooltip: 'Reminders',
             icon: const Icon(Icons.alarm),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RemindersScreen())),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RemindersScreen())),
           ),
           IconButton(
             tooltip: 'Logout',
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
-              Navigator.pop(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
             },
           ),
         ],
@@ -54,14 +61,18 @@ class DashboardScreen extends StatelessWidget {
                     : const CircleAvatar(child: Icon(Icons.pets)),
                 title: Text(pet.name),
                 subtitle: Text('Breed: ${pet.breed} • Age: ${pet.age}'),
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PetDetailsScreen(petId: pet.id))),
+                onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => PetDetailsScreen(petId: pet.id))),
               );
             },
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddPetScreen())),
+        onPressed: () => Navigator.push(
+            context, MaterialPageRoute(builder: (_) => const AddPetScreen())),
         child: const Icon(Icons.add),
       ),
     );

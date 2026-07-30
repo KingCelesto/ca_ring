@@ -11,15 +11,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-    );
+  );
 
   var androidInit = const AndroidInitializationSettings('@mipmap/ic_launcher');
   var initSettings = InitializationSettings(android: androidInit);
-  await flutterLocalNotificationsPlugin.initialize(initSettings);
+  await flutterLocalNotificationsPlugin.initialize(
+    settings: initSettings,
+  );
   runApp(PetCareApp());
 }
 
 class PetCareApp extends StatelessWidget {
+  const PetCareApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

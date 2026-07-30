@@ -20,19 +20,30 @@ class _RemindersScreenState extends State<RemindersScreen> {
     setState(() => saving = true);
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('reminders').add({
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('reminders')
+          .add({
         'title': titleCtrl.text.trim(),
         'date': Timestamp.fromDate(selectedDate!),
         'createdAt': FieldValue.serverTimestamp(),
       });
 
       // immediate test notification (you can replace with scheduled logic later)
-      await NotificationService().showNow('Reminder set', titleCtrl.text.trim());
+      await NotificationService()
+          .showNow('Reminder set', titleCtrl.text.trim());
 
       if (!mounted) return;
-      Navigator.pop(context);
+      if (Navigator.canPop(context)) {
+        Navigator.of(context).pop();
+      }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
     } finally {
       if (mounted) setState(() => saving = false);
     }
@@ -46,28 +57,50 @@ class _RemindersScreenState extends State<RemindersScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Reminder Title')),
+            TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(labelText: 'Reminder Title')),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () async {
                 final now = DateTime.now();
+                final currentContext = context;
+                if (!currentContext.mounted) return;
                 final date = await showDatePicker(
-                  context: context,
+                  context: currentContext,
                   firstDate: DateTime(now.year, now.month, now.day),
                   lastDate: DateTime(now.year + 3),
                   initialDate: now,
                 );
+                if (!currentContext.mounted) return;
                 if (date != null) {
-                  final time = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                  final time = await showTimePicker(
+                    context: currentContext,
+                    initialTime: TimeOfDay.now(),
+                  );
+                  if (!currentContext.mounted) return;
                   if (time != null) {
-                    setState(() => selectedDate = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                    if (!mounted) return;
+                    setState(() => selectedDate = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        ));
                   }
                 }
               },
-              child: Text(selectedDate == null ? 'Pick Date & Time' : selectedDate.toString()),
+              child: Text(selectedDate == null
+                  ? 'Pick Date & Time'
+                  : selectedDate.toString()),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(onPressed: saving ? null : _addReminder, child: saving ? const CircularProgressIndicator() : const Text('Save Reminder')),
+            ElevatedButton(
+                onPressed: saving ? null : _addReminder,
+                child: saving
+                    ? const CircularProgressIndicator()
+                    : const Text('Save Reminder')),
           ],
         ),
       ),

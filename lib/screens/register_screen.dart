@@ -10,7 +10,6 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final name = TextEditingController();
   final email = TextEditingController();
   final password = TextEditingController();
   bool loading = false;
@@ -42,8 +41,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            TextField(controller: name, keyboardType: TextInputType.text, decoration: const InputDecoration(labelText: 'name')),
-            const SizedBox(height: 10),
             TextField(controller: email, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email')),
             const SizedBox(height: 10),
             TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
