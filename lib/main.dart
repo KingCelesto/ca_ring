@@ -1,36 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'screens/splash_screen.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+import 'firebase_options.dart';
+import 'core/theme/app_theme.dart';
+import 'core/router/app_router.dart';
 
 void main() async {
+  // Required whenever you do async work (like Firebase) before runApp
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  var androidInit = const AndroidInitializationSettings('@mipmap/ic_launcher');
-  var initSettings = InitializationSettings(android: androidInit);
-  await flutterLocalNotificationsPlugin.initialize(
-    settings: initSettings,
+  runApp(
+    const ProviderScope(   // wraps the whole app so any widget can use Riverpod
+      child: MyApp(),
+    ),
   );
-  runApp(PetCareApp());
 }
 
-class PetCareApp extends StatelessWidget {
-  const PetCareApp({super.key});
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PetCare Manager',
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
+      title: 'Pet Care Platform',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.teal),
-      home: SplashScreen(),
+      theme: AppTheme.light(),
+      routerConfig: router,
     );
   }
 }
