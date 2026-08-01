@@ -1,89 +1,101 @@
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/pet_model.dart';
+import '../features/providers/pet_providers.dart';
+import '../../features/auth/providers/auth_providers.dart';
 
-class AddPetScreen extends StatefulWidget {
+class AddPetScreen extends ConsumerStatefulWidget {
   const AddPetScreen({super.key});
 
   @override
-  State<AddPetScreen> createState() => _AddPetScreenState();
+  ConsumerState<AddPetScreen> createState() => _AddPetScreenState();
 }
 
-class _AddPetScreenState extends State<AddPetScreen> {
-  final name = TextEditingController();
-  final breed = TextEditingController();
-  final age = TextEditingController();
-  File? imageFile;
-  bool saving = false;
+class _AddPetScreenState extends ConsumerState<AddPetScreen> {
+  // These "remember" what's typed in each text box
+  final _nameController = TextEditingController();
+  final _breedController = TextEditingController();
 
-  Future<void> _pickImage() async {
-    final res = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (res != null) setState(() => imageFile = File(res.path));
+  // This remembers which dropdown option is picked
+  String _species = 'Dog';
+
+  @override
+  void dispose() {
+    // Cleans up when the screen closes
+    _nameController.dispose();
+    _breedController.dispose();
+    super.dispose();
   }
 
-  Future<void> _save() async {
-    if (name.text.trim().isEmpty) return;
-    setState(() => saving = true);
-    try {
-      final user = FirebaseAuth.instance.currentUser!;
-      String imageUrl = '';
-      if (imageFile != null) {
-        final ref = FirebaseStorage.instance.ref().child('pet_images/${user.uid}/${DateTime.now().millisecondsSinceEpoch}.jpg');
-        await ref.putFile(imageFile!);
-        imageUrl = await ref.getDownloadURL();
-      }
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('pets').add({
-        'name': name.text.trim(),
-        'breed': breed.text.trim(),
-        'age': age.text.trim(),
-        'imageUrl': imageUrl,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      if (!mounted) return;
-      Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => saving = false);
+  // Runs when "Save Pet" is tapped
+  Future<void> _savePet() async {
+    final user = ref.read(authStateProvider).value;
+    if (user == null) return; // safety check — should never happen here
+
+    final newPet = Pet(
+      id: '', // Firestore will generate the real ID
+      ownerId: user.uid,
+      name: _nameController.text,
+      species: _species,
+      breed: _breedController.text,
+    );
+
+    await ref.read(petRepositoryProvider).addPet(newPet);
+
+    if (mounted) {
+      Navigator.of(context).pop(); // closes this screen, goes back
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Pet')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      appBar: AppBar(title: const Text('Add a Pet')),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                height: 150,
-                width: 150,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(12),
-                  image: imageFile != null ? DecorationImage(image: FileImage(imageFile!), fit: BoxFit.cover) : null,
-                ),
-                child: imageFile == null ? const Icon(Icons.add_a_photo, size: 40) : null,
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Pet name',
+                border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
-            TextField(controller: name, decoration: const InputDecoration(labelText: 'Pet Name')),
-            const SizedBox(height: 10),
-            TextField(controller: breed, decoration: const InputDecoration(labelText: 'Breed')),
-            const SizedBox(height: 10),
-            TextField(controller: age, decoration: const InputDecoration(labelText: 'Age')),
-            const SizedBox(height: 20),
+            DropdownButtonFormField<String>(
+              initialValue: _species,
+              decoration: const InputDecoration(
+                labelText: 'Species',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: 'Dog', child: Text('Dog')),
+                DropdownMenuItem(value: 'Cat', child: Text('Cat')),
+                DropdownMenuItem(value: 'Other', child: Text('Other')),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _species = value!;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _breedController,
+              decoration: const InputDecoration(
+                labelText: 'Breed (optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: saving ? null : _save,
-              child: saving ? const CircularProgressIndicator() : const Text('Save'),
+              onPressed: _savePet,
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('Save Pet'),
+              ),
             ),
           ],
         ),

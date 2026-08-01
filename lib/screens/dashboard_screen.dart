@@ -1,79 +1,55 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'add_pet_screen.dart';
-import 'pet_details_screen.dart';
-import 'reminders_screen.dart';
-import '../models/pet_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/providers/pet_providers.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser!;
-    final petsRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('pets')
-        .orderBy('createdAt', descending: true);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final petsAsync = ref.watch(petsListProvider);
+    final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Pets'),
-        actions: [
-          IconButton(
-            tooltip: 'Reminders',
-            icon: const Icon(Icons.alarm),
-            onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RemindersScreen())),
-          ),
-          IconButton(
-            tooltip: 'Logout',
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            },
-          ),
-        ],
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: petsRef.snapshots(),
-        builder: (context, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final docs = snap.data?.docs ?? [];
-          if (docs.isEmpty) {
-            return const Center(child: Text('No pets yet. Tap + to add one.'));
-          }
-          return ListView.builder(
-            itemCount: docs.length,
-            itemBuilder: (_, i) {
-              final d = docs[i];
-              final pet = Pet.fromMap(d.id, d.data() as Map<String, dynamic>);
-              return ListTile(
-                leading: (pet.imageUrl?.isNotEmpty ?? false)
-                    ? CircleAvatar(backgroundImage: NetworkImage(pet.imageUrl!))
-                    : const CircleAvatar(child: Icon(Icons.pets)),
-                title: Text(pet.name),
-                subtitle: Text('Breed: ${pet.breed} • Age: ${pet.age}'),
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => PetDetailsScreen(petId: pet.id))),
-              );
-            },
+      appBar: AppBar(title: const Text('Dashboard')),
+      body: petsAsync.when(
+        data: (pets) {
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // A summary card showing total pet count
+              Card(
+                color: colors.primary.withOpacity(0.08),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.pets, size: 40, color: colors.primary),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${pets.length}',
+                            style: Theme.of(context).textTheme.headlineMedium,
+                          ),
+                          const Text('Pets in your care'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Reminders and vet visits will show up here once we build those sections.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-            context, MaterialPageRoute(builder: (_) => const AddPetScreen())),
-        child: const Icon(Icons.add),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
